@@ -1,7 +1,7 @@
 ---
 title: "A1_P1_Student"
-author: "Céline Carlsen"
-date: "29/8/2017"
+author: "Josephine Hillebrand Hansen"
+date: "7/9/2017"
 output: html_document
 ---
 
@@ -38,6 +38,14 @@ N.B. Create a GitHub repository for the Language Development in ASD set of assig
 Set the working directory (the directory with your data and code for these assignments):
 
 ```{r}
+#Empty environments
+rm(list=ls())
+
+#Set WD
+setwd("C:/Users/hille/OneDrive/Cognitive Science at Aarhus University/2017 - Experimental Methods 3/assignments/Assignment-1")
+
+
+
 
 ```
 
@@ -47,6 +55,15 @@ Load the three data sets, after downloading them from dropbox and saving them in
 * Word data: https://www.dropbox.com/s/8ng1civpl2aux58/token_train.csv?dl=0
 
 ```{r}
+#Load data sets
+#Demographic data
+demoData = read.csv("demo_train.csv", header = TRUE)
+
+#Length of utterance data
+LUData = read.csv("LU_train.csv", header = TRUE)
+
+#Word data
+wordData = read.csv("token_train.csv", header = TRUE)
 
 ```
 
@@ -64,6 +81,11 @@ Tip: Look into the package data.table, or google "how to rename variables in R"
 
 
 ```{r}
+#Rename ChildID to SUBJ and Visit to VISIT in demoData
+
+demoData = rename(demoData, c("Child.ID" = "SUBJ", "Visit" = "VISIT"))
+
+
 
 ```
 
@@ -71,7 +93,15 @@ Tip: Look into the package data.table, or google "how to rename variables in R"
 Tip: There is a package called stringr, which will be very handy for you also in future assignments. We will return to this package later, but for now use the str_extract () to extract only the number from the variable Visit in each data set. Tip: type ?str_extract() after loading the library, for examples of how to use it.
 
 ```{r}
+#Load package "stringr"
+library(stringr)
 
+#Change "VISIT" to just numbers for length of utterance dataset and word dataset
+#"\\d" extracts digits
+
+LUData$VISIT = str_extract(LUData$VISIT, "\\d")
+
+wordData$VISIT = str_extract(wordData$VISIT, "\\d")
 
 ```
 
