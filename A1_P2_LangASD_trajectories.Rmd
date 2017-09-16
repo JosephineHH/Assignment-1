@@ -59,7 +59,18 @@ The interaction however was significant (beta = 0.253, SE = 0.038, t = 6.715, p 
 ### Exercise 3) Child directed speech as a moving target
 Describe how parental use of language changes over time in terms of MLU. What do you think is going on?
 
-[HERE GOES YOUR ANSWER]
+MLU of the children's parents is affected significantly by time and by diagnosis.
+
+We produced a linear mixed effects analysis of the relationship between parent MLU, time and diagnosis. As fixed effects we entered visit(time) and diagnosis. We also entered random slopes for each subject and random intercepts for visits as random effects.
+MLU of the parents was significantly affected by diagnosis (beta = 0.502, SE = 0.12, t = 6.542, p < 0.05), meaning that parents iwth a typically developing child had a MLU that was 0.502 longer than parents of children with ASD.
+MLU of the parents was significantly affected by visit (beta = 0.12, SE = 0.02, t = 6.542, p < 0.05), meaning that for each new visit MLU increases by 0.12.
+The model explained 68 percent of variance and the fixed effects explained 23 % of variance (R^2C = 0.6, R^2M = 0.23).
+
+The residuals was normally distributed.
+
+THe model was significantly better than a nullmodel, only including the random effects (chisq(2, 7) = 49.95, p < 0.05)
+
+What is going on is that parents are creating their MLU by time and that parents with children with ASD use a smaller MLU as their children normally use a smaller MLU as well.
 
 ### Exercise 4) Looking into "individual differences" (demographic, clinical or cognitive profiles)
 The dataset contains some additional variables characterizing the kids’ cognitive and clinical profile: ADOS (autism severity), MSEL EL (Expressive Language, that is, verbal IQ, or linguistic skills at first visit as assessed by a psychologist using Mullen Scales of Early Learning), MSEL VR (Visual Reception, used as a proxy for non verbal IQ at first visit), Age, Gender, Ethnicity. Would it make sense to add any of them to your model of linguistic trajectories? Create the best possible model (the one that best explain the data, with MLU as outcome). Next time your model will be tested on new participants, and we will proclaim a winner. Describe your strategy to select the best models (how did you choose the variables to include?) and send the code to Riccardo and Celine.
@@ -278,27 +289,54 @@ The interaction however was significant (beta = 0.253, SE = 0.038, t = 6.715, p 
 
 ```{r}
 #Let us make a plot!
-ggplot(data, aes(VISIT, CHI_MLU, colour = Diagnosis))+
+ggplot(data, aes(VISIT, MOT_MLU, colour = Diagnosis))+
   geom_point()+
   geom_smooth(method = "lm")+
-  labs(title = "Relationship between time,  child MLU and diagnosis", x = "Visit", y = "Child MLU")+
+  labs(title = "Relationship between time,  parent MLU and diagnosis", x = "Visit", y = "Parent MLU")+
   geom_jitter(width = 0.08)
 
 
 #NUll model
-nullModel2 = lmer(CHI_MLU ~ 1 + (1 + VISIT|SUBJ), data)
+nullModel2 = lmer(MOT_MLU ~ 1 + (1 + VISIT|SUBJ), data)
 nullModel
 summary(nullModel)
 
 #Model
-model2 = lmer(CHI_MLU ~ 1 + VISIT + Diagnosis + (1 + VISIT|SUBJ), data)
+model2 = lmer(MOT_MLU ~ 1 + VISIT + Diagnosis + (1 + VISIT|SUBJ), data)
 
+Summary(model2)
+
+
+#Testing r-squared
+r.squaredGLMM(model2)
+
+#Testing the assumptions of normality of residuals
+simulationOutput2 = simulateResiduals(fittedModel = model2, n = 250)
+plotSimulatedResiduals(simulationOutput = simulationOutput2)
+testUniformity(simulationOutput = simulationOutput2)
+
+library(DHARMa)
+simulationOutput = simulateResiduals(fittedModel = model1, n = 250)
+
+
+#Make an ANOVA comparing nullModel and model2
+anova(nullModel2, model2)
 
 
 
 ```
 
-[REPORT THE RESULTS]
+MLU of the children's parents is affected significantly by time and by diagnosis.
+
+We produced a linear mixed effects analysis of the relationship between parent MLU, time and diagnosis. As fixed effects we entered visit(time) and diagnosis. We also entered random slopes for each subject and random intercepts for visits as random effects.
+MLU of the parents was significantly affected by diagnosis (beta = 0.502, SE = 0.12, t = 6.542, p < 0.05), meaning that parents iwth a typically developing child had a MLU that was 0.502 longer than parents of children with ASD.
+MLU of the parents was significantly affected by visit (beta = 0.12, SE = 0.02, t = 6.542, p < 0.05), meaning that for each new visit MLU increases by 0.12.
+The model explained 68 percent of variance and the fixed effects explained 23 % of variance (R^2C = 0.6, R^2M = 0.23).
+
+The residuals was normally distributed.
+
+THe model was significantly better than a nullmodel, only including the random effects (chisq(2, 7) = 49.95, p < 0.05)
+
 
 ### Adding new variables (Exercise 4)
 
