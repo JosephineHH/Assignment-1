@@ -81,6 +81,9 @@ Tip: Look into the package data.table, or google "how to rename variables in R"
 
 
 ```{r}
+#read 'plyr' from library
+library(plyr)
+
 #Rename ChildID to SUBJ and Visit to VISIT in demoData
 
 demoData = rename(demoData, c("Child.ID" = "SUBJ", "Visit" = "VISIT"))
@@ -117,6 +120,12 @@ Tip: You will have to do identical work for both data sets, so to save time on t
 
 
 ```{r}
+
+demoData$SUBJ = gsub("\\.", "", demoData$SUBJ)
+
+LUData$SUBJ = gsub("\\.", "", LUData$SUBJ)
+
+wordData$SUBJ = gsub("\\.", "", wordData$SUBJ)
 
 ```
 
