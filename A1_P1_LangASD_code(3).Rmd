@@ -218,6 +218,8 @@ Tip: as.numeric() might be a useful function, but not alone.
 Tip: Google "how to rename levels in R".
 
 ```{r}
+str(data)
+
 #Turn Child.ID/SUBJ into numerical values
 
 data$SUBJ = as.numeric(factor(data$SUBJ))
@@ -288,7 +290,8 @@ dataVisits = data %>% #Write to variable
 length(unique(dataVisits$SUBJ))
 
 #13 children did not complete all visits
-
+#And the kids listed:
+unique(dataVisits$SUBJ)
 
 
 
@@ -342,6 +345,7 @@ USING MUTATE, SUMMARISE and PIPES
 ```{r}
 #Add the overall mean
 data = mutate(f, mean_all = mean(f$tokens_CHI))
+
 
 #Add a column with individual means for all kids
 data = data %>%
