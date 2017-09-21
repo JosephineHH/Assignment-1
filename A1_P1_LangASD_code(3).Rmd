@@ -87,7 +87,7 @@ library(tidyverse)
 
 #Rename ChildID to SUBJ and Visit to VISIT in demoData
 
-demoData = rename(demoData, SUBJ = Child.ID, VISIT = Visit)
+demoData = dplyr::rename(demoData, SUBJ = Child.ID, VISIT = Visit)
 
 
 
@@ -151,7 +151,7 @@ It would be smart to rename the MullenRaw and ExpressiveLangRaw into something y
 demoDataSub = select(demoData, SUBJ, VISIT, Ethnicity, Diagnosis, Gender, Age, ADOS, MullenRaw, ExpressiveLangRaw)
 
 #Rename variables MullenRaw and ExpressiveLangRaw
-demoDataSub = rename(demoDataSub, nonVerbalIQ = MullenRaw, verbalIQ = ExpressiveLangRaw)
+demoDataSub = dplyr::rename(demoDataSub, nonVerbalIQ = MullenRaw, verbalIQ = ExpressiveLangRaw)
 
 #LU data
 LUDataSub = select(LUData, SUBJ, VISIT, MOT_MLU, MOT_LUstd, CHI_MLU, CHI_LUstd)
@@ -229,8 +229,8 @@ data$VISIT = as.numeric(data$VISIT)
 
 #Make sure the variables have sensible names
 #Turn "Gender" into: 1 = F, 2 = M
-data[data$Gender == 1,]$Gender = "F"
-data[data$Gender == 2,]$Gender = "M"
+data[data$Gender == 1,]$Gender = "M"
+data[data$Gender == 2,]$Gender = "F"
 
 
 #For Diagnosis change: A = ASD and B = TD. 
