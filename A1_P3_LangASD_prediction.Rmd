@@ -197,19 +197,199 @@ data[data$Gender == 2,]$Gender = "F"
 #This time try using recode() from dplyr
 data$Diagnosis = recode(data$Diagnosis, "A" = "ASD", "B" = "TD")
 
+
+#Call the data something new
+
+testData = data
 ```
 
 - test the performance of the models on the test data (Tips: time to reuse "predict()")
 
 ```{r}
-
+rmse(model, testData)
 
 ```
-
+We get a prediction error of 0.858
 
 - optional: predictions are never certain, can you identify the uncertainty of the predictions? (e.g. google predictinterval())
 
 ```{r}
+library(merTools)
+predictInterval(model, testData)
+```
+
+
+##Excersize 2
+
+In this exercise you have to use cross-validation to calculate the predictive error of your models and use this predictive error to select the best possible model.
+
+- Create the basic model of ChildMLU as a function of Time and Diagnosis (don't forget the random effects!).
+
+```{r}
+modelBasic = lmer(CHI_MLU ~ VISIT + Diagnosis + (1 + VISIT|SUBJ), trainingData)
+
+```
+
+
+- Make a cross-validated version of the model. (Tips: google the function "createFolds";  loop through each fold, train a model on the other folds and test it on the fold)
+
+```{r}
+library(caret)
+folds = createFolds(unique(trainingData$SUBJ), k = 5, list = T, returnTrain = F)
+
+#for i in fold
+#make train data
+#make test data
+#train model
+#test the model
+#save the performance
+train_RMSE = NULL
+test_RMSE = NULL
+
+
+n = 1
+
+library(Metrics)
+library(MuMIn)
+
+
+
+for (fold in folds){
+  test = subset(trainingData, SUBJ %in% fold)
+  train = subset(trainingData, !(SUBJ %in% fold))
+  modelCV = lmer(CHI_MLU ~ VISIT + Diagnosis + (1 + VISIT|SUBJ), trainingData)
+  
+  train_RMSE[n] = modelr::rmse(modelCV, train)
+  
+  pred_test = (predict(modelCV, test))
+  test_RMSE[n] = Metrics::rmse(test$CHI_MLU, pred_test)
+  
+  
+  n = n+1}
+
+library(pastecs)
+stat.desc(train_RMSE, norm = T, basic = F)
+
+stat.desc(test_RMSE, norm = T, basic = F)
+
+#Try making an empty dataframe containing coefficients
+#Use fixef(modelCV) to get coefficients
+#If fold == 1 make the coefficients for that dataframe.
+#If else append it or rbind it to the dataframe.
 
 
 ```
+
+- Report the results and comment on them.
+
+We made a crossvalidation on 5 folds. We found that the training error, M=0.3406479 and SE = 0.00606. The test error, M=0.3366132 and SE = 0.0240583. Thus performance of the model is only slightly better for the test than the trainingdata.
+
+- Now try to find the best possible predictive model of ChildMLU, that is, the one that produces the best cross-validated results.
+
+
+```{r}
+#Will just compare to the model from the last part of the assignment
+
+
+train_RMSE1 = NULL
+test_RMSE1 = NULL
+
+n = 1
+
+for (fold in folds){
+  test = subset(trainingData, SUBJ %in% fold)
+  train = subset(trainingData, !(SUBJ %in% fold))
+  modelCV1 = lmer(CHI_MLU ~ VISIT*ADOS + (1 + VISIT|SUBJ), trainingData)
+  
+  train_RMSE1[n] = modelr::rmse(modelCV1, train)
+  
+  pred_test1 = (predict(modelCV1, test))
+  test_RMSE1[n] = Metrics::rmse(test$CHI_MLU, pred_test1)
+  
+  
+  n = n+1}
+
+stat.desc(train_RMSE1, norm = T, basic = F)
+stat.desc(test_RMSE1, norm = T, basic = F)
+
+#Try one including verbalIQ
+
+
+train_RMSE2 = NULL
+test_RMSE2 = NULL
+
+n = 1
+
+for (fold in folds){
+  test = subset(trainingData, SUBJ %in% fold)
+  train = subset(trainingData, !(SUBJ %in% fold))
+  modelCV2 = lmer(CHI_MLU ~ VISIT*ADOS + verbalIQ + (1 + VISIT|SUBJ), trainingData)
+  
+  train_RMSE2[n] = modelr::rmse(modelCV2, train)
+  
+  pred_test2 = (predict(modelCV2, test))
+  test_RMSE2[n] = Metrics::rmse(test$CHI_MLU, pred_test2)
+  
+  
+  n = n+1}
+
+stat.desc(train_RMSE2, norm = T, basic = F)
+stat.desc(test_RMSE2, norm = T, basic = F)
+
+
+
+
+```
+Actually the first, basic model performed best on both the training and the test data.
+
+
+- Bonus Question 1: How would you go comparing the performance of the basic model and the cross-validated model on the testing set?
+- Bonus Question 2: What is the effect of changing the number of folds? Can you plot RMSE as a function of number of folds?
+- Bonus Question 3: compare the cross-validated predictive error against the actual predictive error on the test data
+
+
+
+##Exercise 3
+
+Let's get to business. This new kiddo - Bernie (number 2) - has entered your clinic. This child has to be assessed according to his group's average and his expected development.
+
+Bernie is one of the six kids in the test dataset, so make sure to extract that child alone for the following analysis.
+
+You want to evaluate:
+
+- how does the child fare in ChildMLU compared to the average TD child at each visit? Define the distance in terms of absolute difference between this Child and the average TD.
+(Tip: recreate the equation of the model: Y=Intercept+BetaX1+BetaX2, etc; input the average of the TD group  for each parameter in the model as X1, X2, etc.).
+
+- how does the child fare compared to the model predictions at Visit 6? Is the child below or above expectations? (tip: use the predict() function on Bernie's data only and compare the prediction with the actual performance of the child)
+
+
+```{r}
+bernie = testData[testData$SUBJ == "2",]
+
+
+#Make the model
+modelTD = lmer(CHI_MLU ~ VISIT + (1 + VISIT|SUBJ), trainingData[trainingData$Diagnosis == "TD",])
+
+summary(modelTD)
+
+#Calculate mean for each visit and subtract from bernies data
+# mean = 1.08883+0.35337*visit
+bernie
+
+bernie$CHI_MLU[bernie$VISIT == "1"] - (1.08883 + 0.35337*1)
+bernie$CHI_MLU[bernie$VISIT == "2"] - (1.08883 + 0.35337*2)
+bernie$CHI_MLU[bernie$VISIT == "3"] - (1.08883 + 0.35337*3)
+bernie$CHI_MLU[bernie$VISIT == "4"] - (1.08883 + 0.35337*4)
+bernie$CHI_MLU[bernie$VISIT == "5"] - (1.08883 + 0.35337*5)
+bernie$CHI_MLU[bernie$VISIT == "6"] - (1.08883 + 0.35337*6)
+
+
+#Bernie actually performs better on the visits than a TD
+predictInterval(modelTD, bernie)
+predict(modelTD, bernie, allow.new.levels = T)
+
+
+#Predict bernie to have an mlu of 3.209057. Actual MLU = 3.448413
+#This is in the interval. He develops better than the typical child.
+```
+Bernie performs better than the average child at the sixth visit.
