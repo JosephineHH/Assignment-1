@@ -36,14 +36,21 @@ N.B. The following lines are a summary of the questions to be answered, the step
 
 Describe the participant samples in the dataset (e.g. by diagnosis, age, etc.). Do you think the two groups are well balanced? If not, what do you think was the reason?
 
-The two groups only differ significantly on their language and on all other aspects (verbalIQ, nonverbalIQ, MLU at first visit and gender) there are no significant differences.
+The only parameter where the two groups are not well-matched is on age.
+The age differs significantly between the two groups. Typically developing children in the sample were on average 12.6296 months (SE = 1.0251) younger than children with autism (t = -12.32, p < 0.05).
+The balance of gender does not differ significantly across the two groups (z = 0.2940, p < 0.05)
+The MLU at first visit does not differ significantly between the two groups at the first visit (t = 0.043, p > 0.05)
+The Verbal IQ of the two groups does not differ significantly between the two groups (t = 1.79, p > 0.05)
+The nonVerbalIQ of the two groups did not differ significantly between the two groups (t = -0.76, p > 0.05)
+
+The two groups only differ significantly on their language abilities. On all other aspects (verbalIQ, nonverbalIQ, MLU at first visit and gender) there was no significant differences between the two groups.
 The reason why the data had to be non-matched for age is that language development for ASD is usaually slower and therefore matching age and language fluency would have been impossible.
 
 ### Exercise 2) Children learning language: the effects of time and ASD
 Describe linguistic development in TD and ASD children in terms of Mean Length of Utterance (MLU)?
 
 Linguistic development of children MLU is affected significantly by time but not by diagnosis.
-We produced a linermixed effects analysis of the relationship between child MLU, time and diagnosis. As fixed effects we entered visit(time) and diagnosis. We also entered random slopes for each subject and random intercepts for visits as random effects.
+We produced a linear mixed effects analysis of the relationship between child MLU, time and diagnosis. As fixed effects we entered visit(time) and diagnosis. We also entered random slopes for each subject and random intercepts for visits as random effects.
 MLU was not significantly affected by diagnosis (beta = 0.29, SE = 0.15, t = 1.882, p > 0.05).
 However, MLU was significantly affected by visit (beta = 0.23, SE = 0.025, t = 9.437, p < 0.05), meaning that for each new visit MLU increases by 0.23.
 
@@ -62,7 +69,7 @@ Describe how parental use of language changes over time in terms of MLU. What do
 MLU of the children's parents is affected significantly by time and by diagnosis.
 
 We produced a linear mixed effects analysis of the relationship between parent MLU, time and diagnosis. As fixed effects we entered visit(time) and diagnosis. We also entered random slopes for each subject and random intercepts for visits as random effects.
-MLU of the parents was significantly affected by diagnosis (beta = 0.502, SE = 0.12, t = 6.542, p < 0.05), meaning that parents iwth a typically developing child had a MLU that was 0.502 longer than parents of children with ASD.
+MLU of the parents was significantly affected by diagnosis (beta = 0.502, SE = 0.12, t = 6.542, p < 0.05), meaning that parents with a typically developing child had a MLU that was 0.502 longer than parents of children with ASD.
 MLU of the parents was significantly affected by visit (beta = 0.12, SE = 0.02, t = 6.542, p < 0.05), meaning that for each new visit MLU increases by 0.12.
 The model explained 68 percent of variance and the fixed effects explained 23 % of variance (R^2C = 0.6, R^2M = 0.23).
 
@@ -70,7 +77,7 @@ The residuals was normally distributed.
 
 THe model was significantly better than a nullmodel, only including the random effects (chisq(2, 7) = 49.95, p < 0.05)
 
-What is going on is that parents are creating their MLU by time and that parents with children with ASD use a smaller MLU as their children normally use a smaller MLU as well.
+What is going on is that parents are increasing their MLU by time and that parents with children with ASD use a smaller MLU as their children normally use a smaller MLU as well.
 
 ### Exercise 4) Looking into "individual differences" (demographic, clinical or cognitive profiles)
 The dataset contains some additional variables characterizing the kids’ cognitive and clinical profile: ADOS (autism severity), MSEL EL (Expressive Language, that is, verbal IQ, or linguistic skills at first visit as assessed by a psychologist using Mullen Scales of Early Learning), MSEL VR (Visual Reception, used as a proxy for non verbal IQ at first visit), Age, Gender, Ethnicity. Would it make sense to add any of them to your model of linguistic trajectories? Create the best possible model (the one that best explain the data, with MLU as outcome). Next time your model will be tested on new participants, and we will proclaim a winner. Describe your strategy to select the best models (how did you choose the variables to include?) and send the code to Riccardo and Celine.
@@ -133,6 +140,8 @@ library(ggplot2)
 #Data =
 
 setwd("C:/Users/hille/OneDrive/Cognitive Science at Aarhus University/2017 - Experimental Methods 3/assignments/Assignment-1")
+
+#load data
 data = read.csv("dataAssignment1.csv")
 
 ```
@@ -158,7 +167,7 @@ summary(lm(Age ~ Diagnosis, data[data$VISIT == "1", ]))
 
 
 #Gender: Binomial (not continousess) outcome
-summary(glm(Gender ~ Diagnosis, family = binomial, data))
+summary(glm(Gender ~ Diagnosis, family = binomial, data[data$VISIT == "1",]))
 
 
 #MLU at first visit
@@ -192,6 +201,18 @@ summary(lm(nonVerbalIQ ~ Diagnosis, data[data$VISIT == "1", ]))
 ```
 
 The only parameter where the two groups are not well-matched is on age.
+
+The age differs significantly between the two groups. Typically developing children in the sample were on average 12.6296 months (SE = 1.0251) younger than children with autism (t = -12.32, p < 0.05).
+
+The balance of gender does not differ significantly across the two groups (z = 0.2940, p < 0.05)
+
+The MLU at first visit does not differ significantly between the two groups at the first visit (t = 0.043, p > 0.05)
+
+The Verbal IQ of the two groups does not differ significantly between the two groups (t = 1.79, p > 0.05)
+
+The nonVerbalIQ of the two groups did not differ significantly between the two groups (t = -0.76, p > 0.05)
+
+
 
 ## Let's test hypothesis 1: Children with ASD display a language impairment  (Exercise 2)
 
@@ -237,7 +258,7 @@ anova(nullModel, model1)
 
 
 #ANOVA
-anova(model1, model1interaction)
+anova(nullModel, model1interaction)
 
 
 #How much variance is explained by each of the models?
@@ -248,7 +269,7 @@ r.squaredGLMM(model1interaction)
 
 #Testing the assumptions of normality of residuals
 library(DHARMa)
-simulationOutput = simulateResiduals(fittedModel = model1, n = 250)
+simulationOutput = simulateResiduals(fittedModel = model1interaction, n = 250)
 
 #Plot
 plotSimulatedResiduals(simulationOutput = simulationOutput)
@@ -264,6 +285,7 @@ testUniformity(simulationOutput = simulationOutput)
 
 ```
 
+(we were told to skip this part as we did not cover it in class)
 Not too good, right? Let's check whether a growth curve model is better.
 Remember: a growth curve model assesses whether changes in time can be described by linear, or quadratic, or cubic (or... etc.) components.
 First build the different models, then compare them to see which one is better
@@ -284,7 +306,7 @@ We produced a linermixed effects analysis of the relationship between child MLU,
 MLU was not significantly affected by diagnosis (beta = 0.29, SE = 0.15, t = 1.882, p > 0.05).
 However, MLU was significantly affected by visit (beta = 0.23, SE = 0.025, t = 9.437, p < 0.05), meaning that for each new visit MLU increases by 0.23.
 
-Our model was not significant compared to a null-model including only the random effects and visit (chisq(1,7) = 2.0177, p > 0.05). THe full model accounted for 81 % of variance whereoff the fixed effects accounted for 22 % of variance (R^2M = 0.2153, R^2C = 0.8063). Thus adding diagnosis as predictor did not add predictive value to the model
+Our model was not significant compared to a null-model including only the random effects and visit (chisq(1,7) = 2.0177, p > 0.05). The full model accounted for 81 % of variance whereoff the fixed effects accounted for 22 % of variance (R^2M = 0.2153, R^2C = 0.8063). Thus adding diagnosis as predictor did not add predictive value to the model
 The residuals were normally distributed.
 
 
@@ -313,7 +335,16 @@ summary(nullModel)
 #Model
 model2 = lmer(MOT_MLU ~ 1 + VISIT + Diagnosis + (1 + VISIT|SUBJ), data)
 
-Summary(model2)
+summary(model2)
+
+#Interaction model
+model2interaction = lmer(MOT_MLU ~ 1 + VISIT*Diagnosis + (1 + VISIT|SUBJ), data)
+
+#Make an ANOVA comparing nullModel and model2
+anova(nullModel2, model2)
+
+#Make an ANOVA comparing model 2 and model2interaction
+anova(model2, model2interaction)
 
 
 #Testing r-squared
@@ -324,12 +355,7 @@ simulationOutput2 = simulateResiduals(fittedModel = model2, n = 250)
 plotSimulatedResiduals(simulationOutput = simulationOutput2)
 testUniformity(simulationOutput = simulationOutput2)
 
-library(DHARMa)
-simulationOutput = simulateResiduals(fittedModel = model1, n = 250)
 
-
-#Make an ANOVA comparing nullModel and model2
-anova(nullModel2, model2)
 
 
 
@@ -338,7 +364,7 @@ anova(nullModel2, model2)
 MLU of the children's parents is affected significantly by time and by diagnosis.
 
 We produced a linear mixed effects analysis of the relationship between parent MLU, time and diagnosis. As fixed effects we entered visit(time) and diagnosis. We also entered random slopes for each subject and random intercepts for visits as random effects.
-MLU of the parents was significantly affected by diagnosis (beta = 0.502, SE = 0.12, t = 6.542, p < 0.05), meaning that parents iwth a typically developing child had a MLU that was 0.502 longer than parents of children with ASD.
+MLU of the parents was significantly affected by diagnosis (beta = 0.502, SE = 0.12, t = 6.542, p < 0.05), meaning that parents with a typically developing child had a MLU that was 0.502 longer than parents of children with ASD.
 MLU of the parents was significantly affected by visit (beta = 0.12, SE = 0.02, t = 6.542, p < 0.05), meaning that for each new visit MLU increases by 0.12.
 The model explained 68 percent of variance and the fixed effects explained 23 % of variance (R^2C = 0.6, R^2M = 0.23).
 
