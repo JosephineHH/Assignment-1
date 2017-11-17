@@ -101,7 +101,7 @@ Tip: There is a package called stringr, which will be very handy for you also in
 library(stringr)
 
 #Change "VISIT" to just numbers for length of utterance dataset and word dataset
-#"\\d" extracts digits
+#"\\d" is a regular expression that extracts digits
 
 LUData$VISIT = str_extract(LUData$VISIT, "\\d")
 
@@ -121,6 +121,8 @@ Tip: You will have to do identical work for both data sets, so to save time on t
 
 
 ```{r}
+
+#We use regular expression and gsub() to remove all .
 
 demoData$SUBJ = gsub("\\.", "", demoData$SUBJ)
 
@@ -182,6 +184,8 @@ data = merge(data, wordDataSub, by = c("SUBJ", "VISIT"))
 #We will leave them out. 
 
 ```
+The number of observations goes down after merging the data set. This is probably because not all childs attended all visits. Thus even if we have the demographic data for them, we won't necessarily have the word data or length of utterance data.
+
 
 Are we done yet?
 
@@ -196,13 +200,13 @@ Tip: the final dataset should have as many rows as the the old one.
 ```{r}
 #In the variables ADOS, MullenRaw and VerbalIQ we want to take the number for the first visist and set it in for all visits
 
-#This works for choosing only the data of the first visit
+#This works for choosing only the data of the first visit. Make a new dataframe called dataVisit1
 dataVisit1 = data[data$VISIT == 1, c("SUBJ", "ADOS", "verbalIQ", "nonVerbalIQ")]
 
-#Remove ADOS, nonVerbalIQ and verbalIQ from the dataframe
+#Remove ADOS, nonVerbalIQ and verbalIQ from the old dataframe
 data = subset(data, select = -c(ADOS, nonVerbalIQ, verbalIQ))
 
-#Then merge data by subject
+#Then merge data by subject, which will insert the values for the first visit for all visit for the variables ADOS, MullenRaw and VerbalIQ
 data = merge(data, dataVisit1, by = c("SUBJ"))
 
 ```
@@ -218,6 +222,7 @@ Tip: as.numeric() might be a useful function, but not alone.
 Tip: Google "how to rename levels in R".
 
 ```{r}
+#Exlore your data
 str(data)
 
 #Turn Child.ID/SUBJ into numerical values
@@ -228,13 +233,13 @@ data$SUBJ = as.numeric(factor(data$SUBJ))
 data$VISIT = as.numeric(data$VISIT)
 
 #Make sure the variables have sensible names
-#Turn "Gender" into: 1 = F, 2 = M
+#Turn "Gender" into: 1 = M, 2 = F
 data[data$Gender == 1,]$Gender = "M"
 data[data$Gender == 2,]$Gender = "F"
 
 
 #For Diagnosis change: A = ASD and B = TD. 
-#This time try using recode() from dplyr
+#This time I try using recode() from dplyr
 data$Diagnosis = recode(data$Diagnosis, "A" = "ASD", "B" = "TD")
 
 #Recode is probably easier to use and remember
@@ -264,17 +269,20 @@ List all kids who:
 3. have not completed all trials. Tip: Use pipes to solve this
 
 ```{r}
-#List kids with a MLU > 2.7
-#Find kids who have a MLU > 2.7
-above2.7 = filter(data, CHI_MLU > 2.7)
-#Write out the specific kids
-unique(above2.7$SUBJ)
+meanMLU = data %>% #Write to variable
+  group_by(SUBJ) %>% #Group by subject (sort-off like making individual data frames by subject)
+  mutate(meanMLU = mean(CHI_MLU)) %>% # Add new column taking the mean of MLU for each participant
+  filter(meanMLU > 2.7) # Choose only those with an MLU above 2.7
+
+#Make df with only ID and mean MLU. Choose unique IDs as well. This dataframe now tells us which kids had an average MLU > 2.7
+meanMLU = unique(data.frame(meanMLU$SUBJ, meanMLU$meanMLU))
+
 
 
 #List kids with MLU < 1.5 at the first visit
-below15 = filter(data[data$VISIT == 1,], CHI_MLU < 1.5)
+below1.5 = filter(data[data$VISIT == 1,], CHI_MLU < 1.5)
 #To list their numbers. Unique is not necessary this time (as we only look at one data point per participant)
-below15$SUBJ
+dfBelow = data.frame(below1.5$SUBJ, below1.5$CHI_MLU)
 
 
 #Look at kids who have not completed all trials
@@ -332,7 +340,7 @@ dataSub = subset(data[data$Diagnosis == "ASD",], select = c(SUBJ, Diagnosis, VIS
 
 #It should just take the variable multiple times. But let's test it just for the fun of it
 dataSubTest = subset(data[data$Diagnosis == "ASD",], select = c(SUBJ, SUBJ, SUBJ, Diagnosis, VISIT, CHI_MLU, tokens_CHI))
-#As suspected it just adds it more times and adds a number to the variable name.
+#As suspected it just adds the variable more times and adds a number to the variable name.
 
 ```
 
@@ -344,7 +352,7 @@ USING MUTATE, SUMMARISE and PIPES
 
 ```{r}
 #Add the overall mean
-data = mutate(f, mean_all = mean(f$tokens_CHI))
+data = mutate(data, mean_all = mean(data$tokens_CHI))
 
 
 #Add a column with individual means for all kids
