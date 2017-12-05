@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Welcome to the third exciting part of the Language Development in ASD exercise
 
-In this exercise we will delve more in depth with different practices of model comparison and model selection, by first evaluating your models from last time, then learning how to cross-validate models and finally how to systematically compare models.
+In this exercise we will dvelve more in depth with different practices of model comparison and model selection, by first evaluating your models from last time, then learning how to cross-validate models and finally how to systematically compare models.
 
 N.B. There are several datasets for this exercise, so pay attention to which one you are using!
 
@@ -107,6 +107,7 @@ model = lmer(CHI_MLU ~ 1 + VISIT*ADOS + (1 + VISIT|SUBJ), trainingData)
 
 #load package metrics
 library(modelr)
+
 
 modelr::rmse(model, trainingData)
 
@@ -206,7 +207,7 @@ testData = data
 - test the performance of the models on the test data (Tips: time to reuse "predict()")
 
 ```{r}
-rmse(model, testData)
+modelr::rmse(model, testData)
 
 ```
 We get a prediction error of 0.858
@@ -268,7 +269,7 @@ for (fold in folds){
   n = n+1}
 
 library(pastecs)
-stat.desc(train_RMSE, norm = T, basic = F)
+round(stat.desc(train_RMSE, norm = T, basic = F), 4)
 
 stat.desc(test_RMSE, norm = T, basic = F)
 
@@ -282,7 +283,7 @@ stat.desc(test_RMSE, norm = T, basic = F)
 
 - Report the results and comment on them.
 
-We made a crossvalidation on 5 folds. We found that the training error, M=0.3406479 and SE = 0.00606. The test error, M=0.3366132 and SE = 0.0240583. Thus performance of the model is only slightly better for the test than the trainingdata.
+We made a crossvalidation on 5 folds. We found that the training error, M=0.3406479 and SE = 0.00606. The test error, M=0.3366132 and SE = 0.0240583. Thus performance of the model is only slightly better for the trainingdata than the testdata.
 
 - Now try to find the best possible predictive model of ChildMLU, that is, the one that produces the best cross-validated results.
 
@@ -309,8 +310,8 @@ for (fold in folds){
   
   n = n+1}
 
-stat.desc(train_RMSE1, norm = T, basic = F)
-stat.desc(test_RMSE1, norm = T, basic = F)
+round(stat.desc(train_RMSE1, norm = T, basic = F),3)
+round(stat.desc(test_RMSE1, norm = T, basic = F), 3)
 
 #Try one including verbalIQ
 
@@ -333,8 +334,8 @@ for (fold in folds){
   
   n = n+1}
 
-stat.desc(train_RMSE2, norm = T, basic = F)
-stat.desc(test_RMSE2, norm = T, basic = F)
+round(stat.desc(train_RMSE2, norm = T, basic = F), 3)
+round(stat.desc(test_RMSE2, norm = T, basic = F), 3)
 
 
 
@@ -364,30 +365,31 @@ You want to evaluate:
 
 
 ```{r}
+#Make data frame for only Bernie
 bernie = testData[testData$SUBJ == "2",]
 
 
 #Make the model
-modelTD = lmer(CHI_MLU ~ VISIT + (1 + VISIT|SUBJ), trainingData[trainingData$Diagnosis == "TD",])
+model = lmer(CHI_MLU ~ VISIT*ADOS + verbalIQ + (1 + VISIT|SUBJ), trainingData)
 
-summary(modelTD)
+summary(model)
+#Make DF of only TD  children
+dataTD = data.frame(trainingData[trainingData$Diagnosis == "TD",])
 
-#Calculate mean for each visit and subtract from bernies data
-# mean = 1.08883+0.35337*visit
-bernie
+#Take bernie MLU at each visit and from this subtract the mean of MLU of the typicaly developing children at each visit
 
-bernie$CHI_MLU[bernie$VISIT == "1"] - (1.08883 + 0.35337*1)
-bernie$CHI_MLU[bernie$VISIT == "2"] - (1.08883 + 0.35337*2)
-bernie$CHI_MLU[bernie$VISIT == "3"] - (1.08883 + 0.35337*3)
-bernie$CHI_MLU[bernie$VISIT == "4"] - (1.08883 + 0.35337*4)
-bernie$CHI_MLU[bernie$VISIT == "5"] - (1.08883 + 0.35337*5)
-bernie$CHI_MLU[bernie$VISIT == "6"] - (1.08883 + 0.35337*6)
+bernie$CHI_MLU[bernie$VISIT == "1"] - mean(dataTD$CHI_MLU[dataTD$VISIT == "1"])
+bernie$CHI_MLU[bernie$VISIT == "2"] - mean(dataTD$CHI_MLU[dataTD$VISIT == "2"])
+bernie$CHI_MLU[bernie$VISIT == "3"] - mean(dataTD$CHI_MLU[dataTD$VISIT == "3"])
+bernie$CHI_MLU[bernie$VISIT == "4"] - mean(dataTD$CHI_MLU[dataTD$VISIT == "4"])
+bernie$CHI_MLU[bernie$VISIT == "5"] - mean(dataTD$CHI_MLU[dataTD$VISIT == "5"])
+bernie$CHI_MLU[bernie$VISIT == "6"] - mean(dataTD$CHI_MLU[dataTD$VISIT == "6"])
 
 
 #Bernie actually performs better on the visits than a TD
-predictInterval(modelTD, bernie)
-predict(modelTD, bernie, allow.new.levels = T)
-
+predictInterval(model, bernie)
+predict(model, bernie, allow.new.levels = T)
+#calculate difference
 
 #Predict bernie to have an mlu of 3.209057. Actual MLU = 3.448413
 #This is in the interval. He develops better than the typical child.
