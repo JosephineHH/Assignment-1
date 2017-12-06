@@ -1,0 +1,190 @@
+---
+title: "Assignment 1 - Language Development in ASD - part 4"
+author: "Riccardo Fusaroli"
+date: "August 10, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Welcome to the fourth exciting part of the Language Development in ASD exercise
+
+In this exercise we will assess how many participants we would need to adequately replicate our findings (ensuring our sample size is adequate, our alpha at 0.05 and our beta at 0.8).
+
+### Exercise 1
+
+How much power does your study have (if your model estimates are quite right)?
+- [GitHub]Load your dataset, fit your favorite model, assess power for your main effects and interactions of interest.
+```{r}
+data = read.csv("dataAssignment1.csv", header = T)
+
+library(lmerTest)
+
+model = lmerTest::lmer(CHI_MLU ~ VISIT*ADOS + verbalIQ + (1 + VISIT|SUBJ), data)
+
+library(simr)
+powerV = powerSim(model, fixed("VISIT"), nsim = 10)
+powerADOS = powerSim(model, fixed("ADOS"), nsim = 10)
+powerVIQ = powerSim(model, fixed("verbalIQ"), nsim = 10)
+powerInteraction = powerSim(model, fixed("VISIT:ADOS"), nsim = 10)
+
+#Plots
+powerCurveV = powerCurve(model, fixed("VISIT"), along = "SUBJ", nsim = 10)
+powerCurveADOS = powerCurve(model, fixed("ADOS"), along = "SUBJ", nsim = 10)
+powerCurveVIQ = powerCurve(model, fixed("verbalIQ"), along = "SUBJ", nsim = 10)
+powerCurveInteraction  = powerCurve(model, fixed("VISIT:ADOS"), along = "SUBJ", nsim = 10)
+
+
+
+```
+
+Looking at our fixed effect visit we have a power of a 100 %. The 95 % confidence interval is between 69.15 and 100. This could be fixed by raising the number of simulations.
+
+We know how many participants should be used with the expected effect size.
+
+
+- Report the power analysis and comment on what you can (or cannot) use its estimates for.
+
+### Exercise 2
+
+How would you perform a more conservative power analysis?
+- Identify and justify a minimum effect size for each of your relevant effects
+visit: 0.05 and diagnosis 0.5 as our minimum effect sizes.
+- [GitHub] take the model from exercise 1 and replace the effects with the minimum effect size that you'd accept.
+- [GitHub] assess the power curve by Child.ID, identifying an ideal number of participants to estimate each effect
+- OPTIONAL if your power estimates do not reach an acceptable threshold simulate additional participants and repeat the previous analysis
+- Report the power analysis and comment on what you can (or cannot) use its estimates for.
+
+```{r}
+
+fixef(model)["VISIT"] = 0.3
+fixef(model)["ADOS"] = 0.05
+fixef(model)["verbalIQ"] = 0.05
+fixef(model)["VISIT:ADOS"] = 0.05
+
+
+#Make the powersimulations as before
+powerV1 = powerSim(model, fixed("VISIT"), nsim = 10)
+powerADOS1 = powerSim(model, fixed("ADOS"), nsim = 10)
+powerVIQ1 = powerSim(model, fixed("verbalIQ"), nsim = 10)
+powerInteraction1 = powerSim(model, fixed("VISIT:ADOS"), nsim = 10)
+
+#Plots
+powerCurveV1 = powerCurve(model, fixed("VISIT"), along = "SUBJ", nsim = 10)
+powerCurveADOS1 = powerCurve(model, fixed("ADOS"), along = "SUBJ", nsim = 10)
+powerCurveVIQ1 = powerCurve(model, fixed("verbalIQ"), along = "SUBJ", nsim = 10)
+powerCurveInteraction1  = powerCurve(model, fixed("VISIT:ADOS"), along = "SUBJ", nsim = 10)
+
+
+
+
+#Problems with installign MASS-package which is required and it was optional and we have no time in our lifes..
+### Riccardo's clumsy function to simulate new participants
+### TO DO points are only notes for myself, so not part of the assignment
+library(MASS)
+createNewData <- function (participants,visits,model){
+  # participants is the number of subjects
+  # visits is the number of visits
+  # TO DO: LOOP THROUGH ALL FE ROWS AND AUTOMATICALLY EXTRACT NAMES OF FIXED EFFECTS AND ESTIMATES
+  fe <- fixef(model)
+  Intercept <- fe[1] #intercept
+  bVisit <- fe[2] #visit
+  bDiagnosis <- fe[3] #diagnosis
+  bVisitDiagnosis <- fe[4] #visit diagnosis interaction
+  # TO DO: INTEGRATE STANDARD ERROR?
+  
+  # TO DO: LOOP THROUGH ALL VC COMPONENTS AND AUTOMATICALLY EXTRACT NAMES OF EFFECTS AND ESTIMATES
+  vc<-VarCorr(model) # variance component
+  sigmaSubject <- as.numeric(attr(vc[[1]],"stddev")[1]) # random intercept by subject
+  sigmaVisit <- as.numeric(attr(vc[[1]],"stddev")[2]) # random slope of visit over subject
+  sigmaResiduals <- as.numeric(attr(vc,"sc"))
+  sigmaCorrelation <- as.numeric(attr(vc[[1]],"correlation")[2])
+  
+  # Create an empty dataframe
+  d=expand.grid(Visit=1:visits,Child.ID=1:participants)
+  # Randomly sample from a binomial (to generate the diagnosis)
+  condition <- sample(rep(0:1, participants/2))
+  d$Diagnosis<-condition[d$Child.ID]
+  d$Diagnosis[is.na(d$Diagnosis)]<-1
+  
+  ## Define variance covariance matrices:
+  Sigma.u<-matrix(c(sigmaSubject^2,
+                    sigmaCorrelation*sigmaSubject*sigmaVisit,
+                    sigmaCorrelation*sigmaSubject*sigmaVisit,
+                    sigmaVisit^2),nrow=2)
+  
+  ## generate new fake participants (column1=RandomIntercept, column2=RandomSlope)
+  u<-mvrnorm(n=participants,
+             mu=c(0,0),Sigma=cov(ranef(model)$Child.ID))
+  
+  ## now generate fake data:
+  ### the outcome is extracted from a gaussian with
+  ### the solution to the model's equation as mean and
+  ### the residual standard deviation as standard deviation 
+  d$CHI_MLU <- rnorm(participants*visits,
+                     (Intercept+u[,1]) +
+                     (bVisit+u[,2])*d$Visit + 
+                     bDiagnosis*d$Diagnosis ,sigmaResiduals)  
+  
+  return(d)
+}
+
+
+# Does not work due to package-problem. createNewData(100, 6, model)
+```
+
+
+### Exercise 3
+
+Assume you have only the resources to collect 30 kids (15 with ASD and 15 TDs). Identify the power for each relevant effect and discuss whether it's worth to run the study and why.
+
+
+
+```{r}
+#first make a subset of the kids
+#It needs to be balanced - maybe choose at random?
+ASD = sample(unique(data$SUBJ[data$Diagnosis == "ASD"]), 15)
+TD = sample(unique(data$SUBJ[data$Diagnosis == "TD"]), 15)
+
+dataTD = subset(data, SUBJ %in% TD)
+dataASD = subset(data, SUBJ %in% ASD)
+
+#Bind data together
+dataSubset = rbind(dataTD, dataASD)
+
+#Need to make a new part of column called participant that is numeric!
+dataSubset$participant = as.numeric(factor(dataSubset$SUBJ))
+
+#Train model on this data
+modelSubset = lmerTest::lmer(CHI_MLU ~ VISIT*ADOS + verbalIQ + (1 + VISIT|SUBJ), dataSubset)
+
+#Use the same fixed effects as before
+fixef(modelSubset)["VISIT"] = 0.3
+fixef(modelSubset)["ADOS"] = 0.05
+fixef(modelSubset)["verbalIQ"] = 0.05
+fixef(modelSubset)["VISIT:ADOS"] = 0.05
+
+
+#Make the powersimulations as before
+powerV2 = powerSim(modelSubset, fixed("VISIT"), nsim = 10)
+powerADOS2 = powerSim(modelSubset, fixed("ADOS"), nsim = 10)
+powerVIQ2 = powerSim(modelSubset, fixed("verbalIQ"), nsim = 10)
+powerInteraction2 = powerSim(modelSubset, fixed("VISIT:ADOS"), nsim = 10)
+
+#Plots
+powerCurveV2 = powerCurve(modelSubset, fixed("VISIT"), along = "participant", nsim = 10)
+powerCurveADOS2 = powerCurve(modelSubset, fixed("ADOS"), along = "participant", nsim = 10)
+powerCurveVIQ2 = powerCurve(modelSubset, fixed("verbalIQ"), along = "participant", nsim = 10)
+powerCurveInteraction2  = powerCurve(modelSubset, fixed("VISIT:ADOS"), along = "participant", nsim = 10)
+
+
+
+
+```
+
+
+
+
+
